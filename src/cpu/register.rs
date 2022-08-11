@@ -74,6 +74,17 @@ impl StatusRegister
         }
     }
 
+    pub fn reset(&mut self)
+    {
+        self.carry =                false;
+        self.zero  =                false;
+        self.interrupt_disable =    false;
+        self.decimal_mode =         false;
+        self.break_command =        false;
+        self.overflow =             false;
+        self.negative =             false;
+    }
+
     pub fn update_for_value(&mut self, value : u8)
     {
         self.set_zero(value == 0);
