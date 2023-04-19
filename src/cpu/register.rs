@@ -121,4 +121,24 @@ impl StatusRegister
         self.break_command
     }
 
+    pub fn set_carry(&mut self, flag: bool)
+    {
+        self.carry = flag;
+    }
+
+    pub fn has_carry(&self) -> bool
+    {
+        self.carry
+    }
+
+    pub fn set_overflow(&mut self, flag: bool)
+    {
+        self.overflow = flag;
+    }
+
+    pub fn has_overflown(&self) -> bool
+    {
+        self.overflow
+    }
+
 }

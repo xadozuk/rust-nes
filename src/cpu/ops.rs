@@ -1,8 +1,9 @@
 #[macro_use]
 mod macros;
 
-#[cfg(test)]
-mod tests;
+mod test_helpers;
+
+mod adc;
 
 use std::collections::HashMap;
 use super::CpuRegisters;

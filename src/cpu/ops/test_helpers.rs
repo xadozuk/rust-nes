@@ -1,6 +1,6 @@
 pub use super::*;
 
-fn test_op(op: impl Op + 'static) -> (CpuRegisters, Box<dyn Op>)
+pub fn test_op(op: impl Op + 'static) -> (CpuRegisters, Box<dyn Op>)
 {
     (CpuRegisters::new(), Box::new(op))
 }
