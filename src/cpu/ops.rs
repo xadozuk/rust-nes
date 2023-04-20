@@ -1,90 +1,65 @@
 #[macro_use]
 mod macros;
 
+#[cfg(test)]
 mod test_helpers;
 
 mod adc;
 
 use std::collections::HashMap;
-use super::CpuRegisters;
+use super::{CpuRegisters, Memory};
 
-pub type Opcodes = HashMap<u8, Box<dyn Op>>;
+#[derive(Debug, Clone, Copy)]
+pub enum AddressingMode
+{
+    Immediate,
+    ZeroPage,
+    Absolute,
+    ZeroPageX,
+    ZeroPageY,
+    AbsoluteX,
+    AbsoluteY,
+    IndirectX,
+    IndirectY
+}
+
+pub type OpcodeMap = HashMap<u8, Opcode>;
+pub struct Opcode
+{
+    pub opcode: u8,
+    pub mode:   AddressingMode,
+    pub op:     Box<dyn Op>
+}
 
 pub trait Op
 {
-    fn call(&self, registers: &mut CpuRegisters, args: &[u8]);
-    fn len(&self) -> usize;
+    fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory);
 
+    fn len(&self) -> usize;
     fn args_len(&self) -> usize
     {
         self.len() - 1
     }
+
+    fn get_operand_addr(&self, mode: AddressingMode, register: &CpuRegisters, memory: &Memory) -> u16
+    {
+
+
+        match mode
+        {
+            AddressingMode::Immediate => *register.pc,
+            AddressingMode::ZeroPage  => memory.read(*register.pc) as u16,
+            AddressingMode::Absolute  => memory.read_u16(*register.pc),
+
+            _ => panic!("Mode {:?} is not supported", mode),
+        }
+    }
 }
 
-
-pub fn ops() -> Opcodes
+pub fn opcodes() -> OpcodeMap
 {
-    ops!(
-        (0x00, BreakOp),
-        (0xA9, LdaImmediate)
+    opcodes!(
+        (0x69, AddressingMode::Immediate, adc::Adc),
+        (0x65, AddressingMode::ZeroPage,  adc::Adc)
     )
-}
-
-struct BreakOp;
-impl Op for BreakOp
-{
-    fn call(&self, registers: &mut CpuRegisters, _: &[u8])
-    {
-        registers.p.set_break(true);
-    }
-
-    fn len(&self) -> usize
-    {
-        1
-    }
-}
-
-struct LdaImmediate;
-impl Op for LdaImmediate
-{
-    fn call(&self, registers: &mut CpuRegisters, args: &[u8])
-    {
-        registers.a.set(args[0]);
-        registers.p.update_for_value(args[0]);
-    }
-
-    fn len(&self) -> usize
-    {
-        2
-    }
-}
-
-struct TransferAToX;
-impl Op for TransferAToX
-{
-    fn call(&self, registers: &mut CpuRegisters, _: &[u8])
-    {
-        registers.x.set(*registers.a);
-        registers.p.update_for_value(*registers.a);
-    }
-
-    fn len(&self) -> usize
-    {
-        1
-    }
-}
-
-struct IncrementX;
-impl Op for IncrementX
-{
-    fn call(&self, registers: &mut CpuRegisters, _: &[u8])
-    {
-        registers.x.set(registers.x.wrapping_add(1));
-        registers.p.update_for_value(*registers.x);
-    }
-
-    fn len(&self) -> usize
-    {
-        1
-    }
 }

@@ -1,12 +1,17 @@
 #[macro_export]
-macro_rules! ops
+macro_rules! opcodes
 {
-    ( $( ($key:expr, $value:expr) ),* ) =>
+    ( $( ($opcode:expr, $mode:expr, $value:expr) ),* ) =>
     {
         {
-            let mut map = HashMap::<u8, Box<dyn Op>>::new();
+            let mut map = OpcodeMap::new();
             $(
-                map.insert($key, Box::new($value));
+                map.insert($opcode, Opcode
+                {
+                    opcode: $opcode,
+                    mode: $mode,
+                    op: Box::new($value)
+                });
             )*
             map
         }

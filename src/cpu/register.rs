@@ -1,6 +1,34 @@
 use std::ops::{Deref, AddAssign};
 
 #[derive(Debug)]
+pub struct CpuRegisters
+{
+    pub p:  StatusRegister,
+    pub pc: Register<u16>,
+    pub sp: Register<u8>,
+    pub a:  Register<u8>,
+    pub x:  Register<u8>,
+    pub y:  Register<u8>,
+}
+
+impl CpuRegisters
+{
+    pub fn new() -> CpuRegisters
+    {
+        CpuRegisters {
+            p: StatusRegister::new(),
+            pc: Register::new(),
+            sp: Register::new(),
+
+            a: Register::new(),
+            x: Register::new(),
+            y: Register::new(),
+        }
+    }
+}
+
+
+#[derive(Debug)]
 pub struct Register<T>
 {
     pub value: T,
@@ -48,6 +76,7 @@ impl<T> Deref for Register<T>
     }
 }
 
+#[derive(Debug)]
 pub struct StatusRegister
 {
     carry:              bool,
