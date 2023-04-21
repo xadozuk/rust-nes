@@ -62,8 +62,8 @@ impl Cpu
                 Some(opcode) =>
                 {
                     let op = &opcode.op;
-                    let args = &self.memory.read_slice(*self.registers.pc, op.args_len());
-                    self.registers.pc += op.args_len() as u16;
+                    // let args = &self.memory.read_slice(*self.registers.pc, op.args_len());
+                    // self.registers.pc += op.args_len() as u16;
 
                     op.call(opcode.mode, &mut self.registers, &mut self.memory);
                 },

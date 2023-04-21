@@ -24,19 +24,18 @@ impl Memory
 
     pub fn read_u16(&self, pos: u16) -> u16
     {
-        let lsb = self.read(pos) as u16;
-        let msb = self.read(pos + 1) as u16;
+        let lsb = self.read(pos);
+        let msb = self.read(pos + 1);
 
-        (msb << 8) + lsb
+        u16::from_le_bytes([lsb, msb])
     }
 
     pub fn write_u16(&mut self, pos: u16, data: u16)
     {
-        let lsb = (data & 0xFF) as u8;
-        let msb = (data >> 8) as u8;
+        let bytes = data.to_le_bytes();
 
-        self.write(pos, lsb);
-        self.write(pos + 1, msb);
+        self.write(pos, bytes[0]);
+        self.write(pos + 1, bytes[1]);
     }
 
     pub fn read_slice(&self, pos: u16, length: usize) -> &[u8]

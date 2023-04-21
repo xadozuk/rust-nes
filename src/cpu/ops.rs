@@ -5,20 +5,27 @@ mod macros;
 mod test_helpers;
 
 mod adc;
+mod and;
+mod asl;
+mod branch;
+mod bit;
 
-use std::collections::HashMap;
+use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};
 
 #[derive(Debug, Clone, Copy)]
 pub enum AddressingMode
 {
+    Accumulator,
+    Relative,
     Immediate,
     ZeroPage,
-    Absolute,
     ZeroPageX,
     ZeroPageY,
+    Absolute,
     AbsoluteX,
     AbsoluteY,
+    Indirect,
     IndirectX,
     IndirectY
 }
@@ -35,31 +42,327 @@ pub trait Op
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory);
 
-    fn len(&self) -> usize;
-    fn args_len(&self) -> usize
+    fn operand_addr(&self, mode: AddressingMode, registers: &CpuRegisters, memory: &Memory) -> u16
     {
-        self.len() - 1
-    }
-
-    fn get_operand_addr(&self, mode: AddressingMode, register: &CpuRegisters, memory: &Memory) -> u16
-    {
-
-
         match mode
         {
-            AddressingMode::Immediate => *register.pc,
-            AddressingMode::ZeroPage  => memory.read(*register.pc) as u16,
-            AddressingMode::Absolute  => memory.read_u16(*register.pc),
+            AddressingMode::Immediate => *registers.pc,
+            AddressingMode::ZeroPage  => memory.read(*registers.pc) as u16,
+            AddressingMode::ZeroPageX => memory.read(*registers.pc).wrapping_add(*registers.x) as u16,
+            AddressingMode::ZeroPageY => memory.read(*registers.pc).wrapping_add(*registers.y) as u16,
 
-            _ => panic!("Mode {:?} is not supported", mode),
+            AddressingMode::Absolute  => memory.read_u16(*registers.pc),
+            AddressingMode::AbsoluteX => memory.read_u16(*registers.pc) + *registers.x as u16,
+            AddressingMode::AbsoluteY => memory.read_u16(*registers.pc) + *registers.y as u16,
+
+            AddressingMode::Indirect => memory.read_u16(memory.read_u16(*registers.pc)),
+
+            AddressingMode::IndirectX => {
+                let lsb_addr = memory.read(*registers.pc).wrapping_add(*registers.x);
+
+                let lsb = memory.read(lsb_addr as u16);
+                let msb = memory.read(lsb_addr.wrapping_add(1) as u16);
+
+                u16::from_le_bytes([lsb, msb])
+            },
+
+            AddressingMode::IndirectY => {
+                let lsb_addr = memory.read(*registers.pc);
+
+                let lsb = memory.read(lsb_addr as u16);
+                let msb = memory.read(lsb_addr.wrapping_add(1) as u16);
+
+                u16::from_le_bytes([lsb, msb]) + *registers.y as u16
+            },
+
+            AddressingMode::Relative => {
+                let jump_size = memory.read(*registers.pc) as i8; // To conserve sign between casting
+
+                registers.pc
+                    .wrapping_add(1) // Add the operand size (in CPU cycle it is added after op execution)
+                    .wrapping_add(jump_size as u16)
+            }
+
+            AddressingMode::Accumulator => panic!("You cannot get operand address for Accumulator addressing mode")
         }
     }
+
+    fn operand(&self, mode: AddressingMode, registers: &CpuRegisters, memory: &Memory) -> u8
+    {
+        if let AddressingMode::Accumulator = mode { return *registers.a; }
+
+        memory.read(self.operand_addr(mode, registers, memory))
+    }
+
 }
 
 pub fn opcodes() -> OpcodeMap
 {
     opcodes!(
         (0x69, AddressingMode::Immediate, adc::Adc),
-        (0x65, AddressingMode::ZeroPage,  adc::Adc)
+        (0x65, AddressingMode::ZeroPage,  adc::Adc),
+        (0x75, AddressingMode::ZeroPageX, adc::Adc),
+        (0x6D, AddressingMode::Absolute,  adc::Adc),
+        (0x7D, AddressingMode::AbsoluteX, adc::Adc),
+        (0x79, AddressingMode::AbsoluteY, adc::Adc)
+        // TODO: ADC Indirect,X
+        // TODO: ADC Indirect,Y
     )
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::{*, test_helpers::test_op};
+
+    struct DummyOp;
+    impl Op for DummyOp
+    {
+        fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory) {}
+    }
+
+    #[test]
+    fn accumulator()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        r.a.set(0x50);
+
+        assert_eq!(0x50, op.operand(AddressingMode::Accumulator, &r, &m));
+    }
+
+    #[test]
+    #[should_panic(expected = "You cannot get operand address for Accumulator addressing mode")]
+    fn accumulator_operand_addr()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        op.operand_addr(AddressingMode::Accumulator, &r, &m);
+    }
+
+    #[test]
+    fn immediate()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        r.pc.set(0x1000);
+        m.write(0x1000, 0x50);
+
+        assert_eq!(0x1000, op.operand_addr(AddressingMode::Immediate, &r, &m));
+        assert_eq!(0x50, op.operand(AddressingMode::Immediate, &r, &m));
+    }
+
+    #[test]
+    fn zero_page()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write(0x0000, 0x80);
+        m.write(0x0080, 0xFF);
+
+        assert_eq!(0x0080, op.operand_addr(AddressingMode::ZeroPage, &r, &m));
+        assert_eq!(0xFF, op.operand(AddressingMode::ZeroPage, &r, &m));
+    }
+
+    #[test]
+    fn zero_page_x()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write(0x0000, 0x80);
+        r.x.set(0x0F);
+
+        m.write(0x008F, 0xAA);
+
+        assert_eq!(0x008F, op.operand_addr(AddressingMode::ZeroPageX, &r, &m));
+        assert_eq!(0xAA, op.operand(AddressingMode::ZeroPageX, &r, &m));
+    }
+
+    #[test]
+    fn zero_page_x_page_wrap()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write(0x0000, 0xFF);
+        r.x.set(0x81);
+
+        m.write(0x0080, 0xAA);
+
+        assert_eq!(0x0080, op.operand_addr(AddressingMode::ZeroPageX, &r, &m));
+        assert_eq!(0xAA, op.operand(AddressingMode::ZeroPageX, &r, &m));
+    }
+
+    #[test]
+    fn zero_page_y()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write(0x0000, 0x80);
+        r.y.set(0x0C);
+
+        m.write(0x008C, 0xCC);
+
+        assert_eq!(0x008C, op.operand_addr(AddressingMode::ZeroPageY, &r, &m));
+        assert_eq!(0xCC, op.operand(AddressingMode::ZeroPageY, &r, &m));
+    }
+
+    #[test]
+    fn zero_page_y_page_wrap()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write(0x0000, 0xFF);
+        r.y.set(0x81);
+
+        m.write(0x0080, 0xAA);
+
+        assert_eq!(0x0080, op.operand_addr(AddressingMode::ZeroPageY, &r, &m));
+        assert_eq!(0xAA, op.operand(AddressingMode::ZeroPageY, &r, &m));
+    }
+
+    #[test]
+    fn absolute()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write_u16(0x0000, 0x1234);
+
+        m.write(0x1234, 0x80);
+
+        assert_eq!(0x1234, op.operand_addr(AddressingMode::Absolute, &r, &m));
+        assert_eq!(0x80, op.operand(AddressingMode::Absolute, &r, &m));
+    }
+
+    #[test]
+    fn absolute_x()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write_u16(0x0000, 0x2000);
+        r.x.set(0x92);
+
+        m.write(0x2092, 0x80);
+
+        assert_eq!(0x2092, op.operand_addr(AddressingMode::AbsoluteX, &r, &m));
+        assert_eq!(0x80, op.operand(AddressingMode::AbsoluteX, &r, &m));
+    }
+
+    #[test]
+    fn absolute_y()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write_u16(0x0000, 0x2000);
+        r.y.set(0x92);
+
+        m.write(0x2092, 0x80);
+
+        assert_eq!(0x2092, op.operand_addr(AddressingMode::AbsoluteY, &r, &m));
+        assert_eq!(0x80, op.operand(AddressingMode::AbsoluteY, &r, &m));
+    }
+
+    #[test]
+    fn indirect()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write_u16(0x0000, 0x2000);
+        m.write_u16(0x2000, 0x4000);
+
+        m.write(0x4000, 0x80);
+
+        assert_eq!(0x4000, op.operand_addr(AddressingMode::Indirect, &r, &m));
+        assert_eq!(0x80, op.operand(AddressingMode::Indirect, &r, &m));
+    }
+
+    #[test]
+    fn indirect_x()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write(0x0000, 0x80);
+        r.x.set(0x0F);
+
+        m.write_u16(0x008F, 0x4000);
+        m.write(0x4000, 0xFF);
+
+        assert_eq!(0x4000, op.operand_addr(AddressingMode::IndirectX, &r, &m));
+        assert_eq!(0xFF, op.operand(AddressingMode::IndirectX, &r, &m));
+    }
+
+    #[test]
+    fn indirect_x_page_wrap()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        r.pc.set(0xFF00);
+        m.write(0xFF00, 0xFF);
+        r.x.set(0x00);
+
+        m.write(0x00FF, 0x34);
+        m.write(0x0000, 0x12);
+        m.write(0x1234, 0xFF);
+
+        assert_eq!(0x1234, op.operand_addr(AddressingMode::IndirectX, &r, &m));
+        assert_eq!(0xFF, op.operand(AddressingMode::IndirectX, &r, &m));
+    }
+
+    #[test]
+    fn indirect_y()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        m.write(0x0000, 0x80);
+
+        m.write_u16(0x0080, 0x1200);
+        r.y.set(0x34);
+
+        m.write(0x1234, 0xFF);
+
+        assert_eq!(0x1234, op.operand_addr(AddressingMode::IndirectY, &r, &m));
+        assert_eq!(0xFF, op.operand(AddressingMode::IndirectY, &r, &m));
+    }
+
+    #[test]
+    fn indirect_y_page_wrap()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        r.pc.set(0xFF00);
+        m.write(0xFF00, 0xFF);
+
+        m.write(0x00FF, 0x34);
+        m.write(0x0000, 0x12);
+        r.y.set(0x02);
+
+        m.write(0x1236, 0xFF);
+
+        assert_eq!(0x1236, op.operand_addr(AddressingMode::IndirectY, &r, &m));
+        assert_eq!(0xFF, op.operand(AddressingMode::IndirectY, &r, &m));
+    }
+
+    #[test]
+    fn relative_forward()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        r.pc.set(0x0000);
+        m.write(0x0000, 0x10);
+
+        // 0x0010 + 1 (operand)
+        assert_eq!(0x0011, op.operand_addr(AddressingMode::Relative, &r, &m));
+    }
+
+    #[test]
+    fn relative_backward()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+
+        r.pc.set(0x1000);
+        m.write(0x1000, 0xF6); // -10 as signed
+
+        // 0x1000 + 1 - 0xF6
+        assert_eq!(0x0FF7, op.operand_addr(AddressingMode::Relative, &r, &m));
+    }
+
 }
