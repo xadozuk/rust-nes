@@ -10,6 +10,7 @@ mod asl;
 mod branch;
 mod bit;
 mod brk;
+mod flags;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};

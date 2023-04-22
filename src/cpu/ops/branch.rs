@@ -156,4 +156,18 @@ mod tests
         assert!(!branch_taken(Bpl, |r| r.p.set_negative(true)));
     }
 
+    #[test]
+    fn bvc()
+    {
+        assert!(branch_taken(Bvc, |r| r.p.set_overflow(false)));
+        assert!(!branch_taken(Bvc, |r| r.p.set_overflow(true)));
+    }
+
+    #[test]
+    fn bvs()
+    {
+        assert!(branch_taken(Bvs, |r| r.p.set_overflow(true)));
+        assert!(!branch_taken(Bvs, |r| r.p.set_overflow(false)));
+    }
+
 }

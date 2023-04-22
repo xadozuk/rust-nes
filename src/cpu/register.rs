@@ -194,6 +194,26 @@ impl StatusRegister
         self.overflow
     }
 
+    pub fn set_decimal_mode(&mut self, flag: bool)
+    {
+        self.decimal_mode = flag;
+    }
+
+    pub fn decimal_mode(&self) -> bool
+    {
+        self.decimal_mode
+    }
+
+    pub fn set_interrupt_disable(&mut self, flag: bool)
+    {
+        self.interrupt_disable = flag;
+    }
+
+    pub fn interrupt_disabled(&self) -> bool
+    {
+        self.interrupt_disable
+    }
+
 }
 
 impl From<u8> for StatusRegister
