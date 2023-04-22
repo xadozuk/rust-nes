@@ -11,6 +11,7 @@ mod branch;
 mod bit;
 mod brk;
 mod flags;
+mod cmp;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};
