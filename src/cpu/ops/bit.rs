@@ -19,5 +19,36 @@ mod tests
     use super::super::test_helpers::*;
     use super::*;
 
-    //TODO: impl
+    #[test]
+    fn set_zero()
+    {
+        let (op, mut r, mut m) = test_op(Bit);
+
+        r.a.set(0b1000_0000);
+        m.write_u16(0x0000, 0x1000);
+        m.write(0x1000, 0b0000_0000);
+
+        op.call(AddressingMode::Absolute, &mut r, &mut m);
+
+        assert!(r.p.is_zero());
+        assert!(!r.p.has_overflown());
+        assert!(!r.p.is_negative());
+    }
+
+    #[test]
+    fn not_zero_but_overflow_and_negative()
+    {
+        let (op, mut r, mut m) = test_op(Bit);
+
+        r.a.set(0b1000_0000);
+        m.write_u16(0x0000, 0x1000);
+        m.write(0x1000, 0b1100_0000);
+
+        op.call(AddressingMode::Absolute, &mut r, &mut m);
+
+        assert!(!r.p.is_zero());
+        assert!(r.p.has_overflown());
+        assert!(r.p.is_negative());
+    }
+
 }

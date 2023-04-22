@@ -102,5 +102,58 @@ mod tests
     use super::super::test_helpers::*;
     use super::*;
 
-    //TODO: impl
+    fn branch_taken(op: impl Op + 'static, setup: impl Fn(&mut CpuRegisters)) -> bool
+    {
+        let (op, mut r, mut m) = test_op(op);
+
+        setup(&mut r);
+
+        m.write(0x0000, 0x10);
+        op.call(AddressingMode::Relative, &mut r, &mut m);
+
+        0x11 == *r.pc
+    }
+
+    #[test]
+    fn bcc()
+    {
+        assert!(branch_taken(Bcc, |r| r.p.set_carry(false)));
+        assert!(!branch_taken(Bcc, |r| r.p.set_carry(true)));
+    }
+
+    #[test]
+    fn bcs()
+    {
+        assert!(branch_taken(Bcs, |r| r.p.set_carry(true)));
+        assert!(!branch_taken(Bcs, |r| r.p.set_carry(false)));
+    }
+
+    #[test]
+    fn beq()
+    {
+        assert!(branch_taken(Beq, |r| r.p.set_zero(true)));
+        assert!(!branch_taken(Beq, |r| r.p.set_zero(false)));
+    }
+
+    #[test]
+    fn bmi()
+    {
+        assert!(branch_taken(Bmi, |r| r.p.set_negative(true)));
+        assert!(!branch_taken(Bmi, |r| r.p.set_negative(false)));
+    }
+
+    #[test]
+    fn bne()
+    {
+        assert!(branch_taken(Bne, |r| r.p.set_zero(false)));
+        assert!(!branch_taken(Bne, |r| r.p.set_zero(true)));
+    }
+
+    #[test]
+    fn bpl()
+    {
+        assert!(branch_taken(Bpl, |r| r.p.set_negative(false)));
+        assert!(!branch_taken(Bpl, |r| r.p.set_negative(true)));
+    }
+
 }
