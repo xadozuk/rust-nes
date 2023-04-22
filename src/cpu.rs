@@ -6,10 +6,14 @@ use register::CpuRegisters;
 use memory::Memory;
 use ops::OpcodeMap;
 
-const ROM_START: u16 = 0x8000;
+const ROM_START: u16          = 0x8000;
+const STACK_START: u16        = 0x0100;
+const STACK_END: u16          = 0x01FF;
 const STACK_POINTER_START: u8 = 0xFF;
 
-const RESET_HANDLER_ADDR: u16 = 0xFFFC;
+const NMI_VECTOR: u16   = 0xFFFA;
+const RESET_VECTOR: u16 = 0xFFFC;
+const BRK_VECTOR: u16   = 0xFFFE;
 
 pub struct Cpu
 {
@@ -38,7 +42,7 @@ impl Cpu
         self.registers.p.reset();
 
         self.registers.pc.set(
-            self.memory.read_u16(RESET_HANDLER_ADDR)
+            self.memory.read_u16(RESET_VECTOR)
         );
     }
 
@@ -69,8 +73,6 @@ impl Cpu
                 },
                 None => todo!(),
             }
-
-            if self.registers.p.has_broke() { break }
         }
     }
 

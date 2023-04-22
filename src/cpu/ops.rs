@@ -9,6 +9,7 @@ mod and;
 mod asl;
 mod branch;
 mod bit;
+mod brk;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};
@@ -16,6 +17,7 @@ use super::{CpuRegisters, Memory};
 #[derive(Debug, Clone, Copy)]
 pub enum AddressingMode
 {
+    Implicit,
     Accumulator,
     Relative,
     Immediate,
@@ -83,7 +85,8 @@ pub trait Op
                     .wrapping_add(jump_size as u16)
             }
 
-            AddressingMode::Accumulator => panic!("You cannot get operand address for Accumulator addressing mode")
+            AddressingMode::Accumulator => panic!("You cannot get operand address for Accumulator addressing mode"),
+            AddressingMode::Implicit => panic!("You cannot get operand address for Implicit addressing mode")
         }
     }
 
@@ -119,6 +122,22 @@ mod tests
     impl Op for DummyOp
     {
         fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory) {}
+    }
+
+    #[test]
+    #[should_panic(expected = "You cannot get operand address for Implicit addressing mode")]
+    fn implicit_operand_addr()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+        op.operand_addr(AddressingMode::Implicit, &r, &m);
+    }
+
+    #[test]
+    #[should_panic]
+    fn implicit_operand()
+    {
+        let (op, mut r, mut m) = test_op(DummyOp);
+        op.operand(AddressingMode::Implicit, &r, &m);
     }
 
     #[test]

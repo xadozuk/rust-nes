@@ -1,6 +1,6 @@
 pub struct Memory
 {
-    memory: [u8; 0xFFFF]
+    memory: [u8; 0x10000]
 }
 
 impl Memory
@@ -8,7 +8,7 @@ impl Memory
     pub fn new() -> Memory
     {
         Memory {
-            memory: [0; 0xFFFF]
+            memory: [0; 0x10000]
         }
     }
 

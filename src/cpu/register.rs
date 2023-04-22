@@ -1,4 +1,6 @@
-use std::ops::{Deref, AddAssign};
+use std::ops::{Deref, AddAssign, SubAssign};
+
+use super::STACK_POINTER_START;
 
 #[derive(Debug)]
 pub struct CpuRegisters
@@ -18,7 +20,7 @@ impl CpuRegisters
         CpuRegisters {
             p: StatusRegister::new(),
             pc: Register::new(),
-            sp: Register::new(),
+            sp: StackRegister::from(STACK_POINTER_START),
 
             a: Register::new(),
             x: Register::new(),
@@ -40,6 +42,11 @@ impl<T> Register<T>
     pub fn new() -> Self
     {
         Register { value: T::default() }
+    }
+
+    pub fn from(value: T) -> Self
+    {
+        Register { value: value }
     }
 
     pub fn set(&mut self, value: T)
@@ -76,6 +83,36 @@ impl<T> Deref for Register<T>
     }
 }
 
+type StackRegister = Register<u8>;
+impl StackRegister
+{
+    pub fn increment(&mut self) -> u8
+    {
+        let value = self.value;
+        self.value += 1;
+
+        value
+    }
+
+    pub fn decrement(&mut self) -> u8
+    {
+        let value = self.value;
+        self.value -= 1;
+
+        value
+    }
+}
+
+pub const CARRY_FLAG: u8     = 0b0000_0001;
+pub const ZERO_FLAG: u8      = 0b0000_0010;
+pub const INTERRUPT_FLAG: u8 = 0b0000_0100;
+pub const DECIMAL_FLAG: u8   = 0b0000_1000;
+pub const OVERFLOW_FLAG: u8  = 0b0100_0000;
+pub const NEGATIVE_FLAG: u8  = 0b1000_0000;
+
+pub const BREAK_FLAG: u8     = 0b0011_0000;
+pub const NMI_FLAG: u8       = 0b0010_0000;
+
 #[derive(Debug)]
 pub struct StatusRegister
 {
@@ -83,7 +120,6 @@ pub struct StatusRegister
     zero:               bool,
     interrupt_disable:  bool,
     decimal_mode:       bool,
-    break_command:      bool,
     overflow:           bool,
     negative:           bool,
 }
@@ -97,7 +133,6 @@ impl StatusRegister
             zero:               false,
             interrupt_disable:  false,
             decimal_mode:       false,
-            break_command:      false,
             overflow:           false,
             negative:           false,
         }
@@ -109,7 +144,6 @@ impl StatusRegister
         self.zero  =                false;
         self.interrupt_disable =    false;
         self.decimal_mode =         false;
-        self.break_command =        false;
         self.overflow =             false;
         self.negative =             false;
     }
@@ -140,16 +174,6 @@ impl StatusRegister
         self.negative
     }
 
-    pub fn set_break(&mut self, flag: bool)
-    {
-        self.break_command = flag;
-    }
-
-    pub fn has_broke(&self) -> bool
-    {
-        self.break_command
-    }
-
     pub fn set_carry(&mut self, flag: bool)
     {
         self.carry = flag;
@@ -170,4 +194,36 @@ impl StatusRegister
         self.overflow
     }
 
+}
+
+impl From<u8> for StatusRegister
+{
+    fn from(byte: u8) -> Self
+    {
+        StatusRegister {
+            carry:              byte & CARRY_FLAG != 0,
+            zero:               byte & ZERO_FLAG != 0,
+            interrupt_disable:  byte & INTERRUPT_FLAG != 0,
+            decimal_mode:       byte & DECIMAL_FLAG != 0,
+            overflow:           byte & OVERFLOW_FLAG != 0,
+            negative:           byte & NEGATIVE_FLAG != 0
+        }
+    }
+}
+
+impl From<&StatusRegister> for u8
+{
+    fn from(reg: &StatusRegister) -> Self
+    {
+        let mut value = 0;
+
+        if reg.carry                { value |= CARRY_FLAG }
+        if reg.zero                 { value |= ZERO_FLAG }
+        if reg.interrupt_disable    { value |= INTERRUPT_FLAG }
+        if reg.decimal_mode         { value |= DECIMAL_FLAG }
+        if reg.overflow             { value |= OVERFLOW_FLAG }
+        if reg.negative             { value |= NEGATIVE_FLAG }
+
+        value
+    }
 }
