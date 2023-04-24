@@ -38,7 +38,7 @@ mod tests
     {
         let (op, mut r, mut m) = test_op(Dey);
 
-        r.y.set( 0x00);
+        r.y.set(0x00);
 
         op.call(AddressingMode::Implicit, &mut r, &mut m);
 

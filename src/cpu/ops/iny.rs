@@ -1,13 +1,13 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Dex;
-impl Op for Dex
+pub struct Iny;
+impl Op for Iny
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
     {
-        let value = registers.x.wrapping_sub(1);
+        let value = registers.y.wrapping_add(1);
 
-        registers.x.set(value);
+        registers.y.set(value);
         registers.p.update_for_value(value);
     }
 }
@@ -21,13 +21,13 @@ mod tests
     #[test]
     fn simple()
     {
-        let (op, mut r, mut m) = test_op(Dex);
+        let (op, mut r, mut m) = test_op(Iny);
 
-        r.x.set(0x0F);
+        r.y.set(0x0F);
 
         op.call(AddressingMode::Implicit, &mut r, &mut m);
 
-        assert_eq!(0x0E, *r.x);
+        assert_eq!(0x10, *r.y);
 
         assert!(!r.p.is_zero());
         assert!(!r.p.is_negative());
@@ -36,30 +36,30 @@ mod tests
     #[test]
     fn with_wrapping()
     {
-        let (op, mut r, mut m) = test_op(Dex);
+        let (op, mut r, mut m) = test_op(Iny);
 
-        r.x.set(0x00);
-
-        op.call(AddressingMode::Implicit, &mut r, &mut m);
-
-        assert_eq!(0xFF, *r.x);
-
-        assert!(!r.p.is_zero());
-        assert!(r.p.is_negative());
-    }
-
-    #[test]
-    fn zero()
-    {
-        let (op, mut r, mut m) = test_op(Dex);
-
-        r.x.set(0x01);
+        r.y.set(0xFF);
 
         op.call(AddressingMode::Implicit, &mut r, &mut m);
 
-        assert_eq!(0x00, *r.x);
+        assert_eq!(0x00, *r.y);
 
         assert!(r.p.is_zero());
         assert!(!r.p.is_negative());
+    }
+
+    #[test]
+    fn negative()
+    {
+        let (op, mut r, mut m) = test_op(Iny);
+
+        r.y.set(0xFE);
+
+        op.call(AddressingMode::Implicit, &mut r, &mut m);
+
+        assert_eq!(0xFF, *r.y);
+
+        assert!(!r.p.is_zero());
+        assert!(r.p.is_negative());
     }
 }

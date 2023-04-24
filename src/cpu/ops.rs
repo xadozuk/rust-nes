@@ -19,6 +19,9 @@ mod dec;
 mod dex;
 mod dey;
 mod eor;
+mod inc;
+mod inx;
+mod iny;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};
