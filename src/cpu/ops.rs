@@ -12,6 +12,11 @@ mod bit;
 mod brk;
 mod flags;
 mod cmp;
+mod cpx;
+mod cpy;
+mod dec;
+mod dex;
+mod dey;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};
