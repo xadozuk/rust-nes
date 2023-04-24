@@ -1,4 +1,3 @@
-use crate::cpu::STACK_START;
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
 pub struct Jsr;

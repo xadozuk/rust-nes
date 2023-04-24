@@ -1,4 +1,4 @@
-use crate::cpu::{STACK_START, BRK_VECTOR, register::{BREAK_FLAG}};
+use crate::cpu::{BRK_VECTOR, register::{BREAK_FLAG}};
 
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
