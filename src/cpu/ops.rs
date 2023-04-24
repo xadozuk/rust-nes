@@ -22,6 +22,7 @@ mod eor;
 mod inc;
 mod inx;
 mod iny;
+mod jmp;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};
