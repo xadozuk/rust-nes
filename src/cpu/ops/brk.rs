@@ -7,14 +7,10 @@ impl Op for Brk
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
     {
-        let lsb = (*registers.pc & 0xFF) as u8;
-        let msb = (*registers.pc >> 8) as u8;
-
-        memory.write(STACK_START + registers.sp.decrement() as u16, msb);
-        memory.write(STACK_START + registers.sp.decrement() as u16, lsb);
+        self.stack_push_u16(registers, memory, *registers.pc);
 
         let status_register: u8 = Into::<u8>::into(&registers.p) | BREAK_FLAG;
-        memory.write(STACK_START + registers.sp.decrement() as u16, status_register);
+        self.stack_push(registers, memory, status_register);
 
         registers.pc.set(memory.read_u16(BRK_VECTOR));
     }

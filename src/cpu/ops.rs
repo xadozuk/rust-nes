@@ -23,9 +23,10 @@ mod inc;
 mod inx;
 mod iny;
 mod jmp;
+mod jsr;
 
 use std::{collections::HashMap};
-use super::{CpuRegisters, Memory};
+use super::{CpuRegisters, Memory, STACK_START};
 
 #[derive(Debug, Clone, Copy)]
 pub enum AddressingMode
@@ -108,6 +109,29 @@ pub trait Op
         if let AddressingMode::Accumulator = mode { return *registers.a; }
 
         memory.read(self.operand_addr(mode, registers, memory))
+    }
+
+    fn stack_push(&self, registers: &mut CpuRegisters, memory: &mut Memory, value: u8)
+    {
+        memory.write(STACK_START + registers.sp.decrement() as u16, value);
+    }
+
+    fn stack_push_u16(&self, registers: &mut CpuRegisters, memory: &mut Memory, value: u16)
+    {
+        let msb = (value >> 8) as u8;
+        let lsb = (value & 0xFF) as u8;
+
+        // Push msb first, then lsb
+        self.stack_push(registers, memory, msb);
+        self.stack_push(registers, memory, lsb);
+    }
+
+    fn stack_peek_u16(&self, registers: &CpuRegisters, memory: &Memory) -> u16
+    {
+        let lsb = memory.read(STACK_START + registers.sp.wrapping_add(1) as u16);
+        let msb = memory.read(STACK_START + registers.sp.wrapping_add(2) as u16);
+
+        ((msb as u16) << 8) as u16 | lsb as u16
     }
 
 }
