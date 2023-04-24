@@ -4,6 +4,7 @@ mod macros;
 #[cfg(test)]
 mod test_helpers;
 
+// Import Ops
 mod adc;
 mod and;
 mod asl;
@@ -17,6 +18,7 @@ mod cpy;
 mod dec;
 mod dex;
 mod dey;
+mod eor;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory};
