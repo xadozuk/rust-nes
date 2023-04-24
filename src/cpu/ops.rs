@@ -27,6 +27,7 @@ mod jsr;
 mod lda;
 mod ldx;
 mod ldy;
+mod lsr;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory, STACK_START};
