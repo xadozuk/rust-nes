@@ -16,7 +16,7 @@ impl Op for And
 #[cfg(test)]
 mod tests
 {
-    use crate::cpu::{ops::test_helpers::test_op, memory};
+    use crate::cpu::{ops::test_helpers::test_op};
 
     use super::*;
 
