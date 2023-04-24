@@ -28,6 +28,25 @@ mod lda;
 mod ldx;
 mod ldy;
 mod lsr;
+mod ora;
+mod pha;
+mod php;
+mod pla;
+mod plp;
+mod rol;
+mod ror;
+mod rti;
+mod rts;
+mod sbc;
+mod sta;
+mod stx;
+mod sty;
+mod tax;
+mod tay;
+mod tsx;
+mod txa;
+mod txs;
+mod tya;
 
 use std::{collections::HashMap};
 use super::{CpuRegisters, Memory, STACK_START};
@@ -128,6 +147,25 @@ pub trait Op
         // Push msb first, then lsb
         self.stack_push(registers, memory, msb);
         self.stack_push(registers, memory, lsb);
+    }
+
+    fn stack_pop(&self, registers: &mut CpuRegisters, memory: &Memory) -> u8
+    {
+        memory.read(STACK_START + registers.sp.increment() as u16)
+    }
+
+    fn stack_pop_u16(&self, registers: &mut CpuRegisters, memory: &Memory) -> u16
+    {
+        let lsb = memory.read(STACK_START + registers.sp.increment() as u16);
+        let msb = memory.read(STACK_START + registers.sp.increment() as u16);
+
+        ((msb as u16) << 8) as u16 | lsb as u16
+    }
+
+    // Mainly used for testing
+    fn stack_peek(&self, registers: &CpuRegisters, memory: &Memory) -> u8
+    {
+        memory.read(STACK_START + registers.sp.wrapping_add(1) as u16)
     }
 
     fn stack_peek_u16(&self, registers: &CpuRegisters, memory: &Memory) -> u16

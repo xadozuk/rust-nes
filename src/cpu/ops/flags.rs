@@ -36,6 +36,33 @@ impl Op for Clv
     }
 }
 
+pub struct Sec;
+impl Op for Sec
+{
+    fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
+    {
+        registers.p.set_carry(true);
+    }
+}
+
+pub struct Sed;
+impl Op for Sed
+{
+    fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
+    {
+        registers.p.set_decimal_mode(true);
+    }
+}
+
+pub struct Sei;
+impl Op for Sei
+{
+    fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
+    {
+        registers.p.set_interrupt_disable(true);
+    }
+}
+
 #[cfg(test)]
 mod tests
 {
@@ -88,6 +115,42 @@ mod tests
         op.call(AddressingMode::Implicit, &mut r, &mut m);
 
         assert!(!r.p.has_overflown());
+    }
+
+    #[test]
+    fn sec()
+    {
+        let (op, mut r, mut m) = test_op(Sec);
+
+        r.p.set_carry(false);
+
+        op.call(AddressingMode::Implicit, &mut r, &mut m);
+
+        assert!(r.p.has_carry());
+    }
+
+    #[test]
+    fn sed()
+    {
+        let (op, mut r, mut m) = test_op(Sed);
+
+        r.p.set_decimal_mode(false);
+
+        op.call(AddressingMode::Implicit, &mut r, &mut m);
+
+        assert!(r.p.decimal_mode());
+    }
+
+    #[test]
+    fn sei()
+    {
+        let (op, mut r, mut m) = test_op(Sei);
+
+        r.p.set_interrupt_disable(false);
+
+        op.call(AddressingMode::Implicit, &mut r, &mut m);
+
+        assert!(r.p.interrupt_disabled());
     }
 
 }

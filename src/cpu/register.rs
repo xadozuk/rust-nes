@@ -88,10 +88,8 @@ impl StackRegister
 {
     pub fn increment(&mut self) -> u8
     {
-        let value = self.value;
         self.value += 1;
-
-        value
+        self.value
     }
 
     pub fn decrement(&mut self) -> u8
@@ -146,6 +144,16 @@ impl StatusRegister
         self.decimal_mode =         false;
         self.overflow =             false;
         self.negative =             false;
+    }
+
+    pub fn load_from(&mut self, value: u8)
+    {
+        self.carry =              value & CARRY_FLAG != 0;
+        self.zero =               value & ZERO_FLAG != 0;
+        self.interrupt_disable =  value & INTERRUPT_FLAG != 0;
+        self.decimal_mode =       value & DECIMAL_FLAG != 0;
+        self.overflow =           value & OVERFLOW_FLAG != 0;
+        self.negative =           value & NEGATIVE_FLAG != 0;
     }
 
     pub fn update_for_value(&mut self, value : u8)
