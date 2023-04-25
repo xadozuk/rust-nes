@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Tya;
+op!(Tya);
 impl Op for Tya
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)

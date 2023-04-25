@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Eor;
+op!(Eor);
 impl Op for Eor
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)

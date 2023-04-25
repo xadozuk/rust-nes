@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Dey;
+op!(Dey);
 impl Op for Dey
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)

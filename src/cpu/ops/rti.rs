@@ -2,7 +2,7 @@ use crate::cpu::register::StatusRegister;
 
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Rti;
+op!(Rti);
 impl Op for Rti
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)

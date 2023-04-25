@@ -17,3 +17,13 @@ macro_rules! opcodes
         }
     };
 }
+
+#[macro_export]
+macro_rules! op
+{
+    ($name:ident) =>
+    {
+        #[derive(Debug)]
+        pub struct $name;
+    };
+}

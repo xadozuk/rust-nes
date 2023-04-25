@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct And;
+op!(And);
 impl Op for And
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)

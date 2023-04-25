@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Rts;
+op!(Rts);
 impl Op for Rts
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)

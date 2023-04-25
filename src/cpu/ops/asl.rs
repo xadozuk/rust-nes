@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Asl;
+op!(Asl);
 impl Op for Asl
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)

@@ -28,6 +28,7 @@ mod lda;
 mod ldx;
 mod ldy;
 mod lsr;
+mod nop;
 mod ora;
 mod pha;
 mod php;
@@ -49,6 +50,7 @@ mod txs;
 mod tya;
 
 use std::{collections::HashMap};
+use std::fmt::Debug;
 use super::{CpuRegisters, Memory, STACK_START};
 
 #[derive(Debug, Clone, Copy)]
@@ -70,6 +72,8 @@ pub enum AddressingMode
 }
 
 pub type OpcodeMap = HashMap<u8, Opcode>;
+
+#[derive(Debug)]
 pub struct Opcode
 {
     pub opcode: u8,
@@ -77,7 +81,7 @@ pub struct Opcode
     pub op:     Box<dyn Op>
 }
 
-pub trait Op
+pub trait Op : Debug
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory);
 
@@ -186,10 +190,199 @@ pub fn opcodes() -> OpcodeMap
         (0x75, AddressingMode::ZeroPageX, adc::Adc),
         (0x6D, AddressingMode::Absolute,  adc::Adc),
         (0x7D, AddressingMode::AbsoluteX, adc::Adc),
-        (0x79, AddressingMode::AbsoluteY, adc::Adc)
-        // TODO: ADC Indirect,X
-        // TODO: ADC Indirect,Y
+        (0x79, AddressingMode::AbsoluteY, adc::Adc),
+        (0x61, AddressingMode::IndirectX, adc::Adc),
+        (0x71, AddressingMode::IndirectY, adc::Adc),
+
+        (0x29, AddressingMode::Immediate, and::And),
+        (0x25, AddressingMode::ZeroPage,  and::And),
+        (0x35, AddressingMode::ZeroPageX, and::And),
+        (0x2D, AddressingMode::Absolute,  and::And),
+        (0x3D, AddressingMode::AbsoluteX, and::And),
+        (0x39, AddressingMode::AbsoluteY, and::And),
+        (0x21, AddressingMode::IndirectX, and::And),
+        (0x31, AddressingMode::IndirectY, and::And),
+
+        (0x0A, AddressingMode::Accumulator, asl::Asl),
+        (0x06, AddressingMode::ZeroPage,    asl::Asl),
+        (0x16, AddressingMode::ZeroPageX,   asl::Asl),
+        (0x0E, AddressingMode::Absolute,    asl::Asl),
+        (0x1E, AddressingMode::AbsoluteX,   asl::Asl),
+
+        (0x90, AddressingMode::Relative, branch::Bcc),
+        (0xB0, AddressingMode::Relative, branch::Bcs),
+        (0xF0, AddressingMode::Relative, branch::Beq),
+        (0x30, AddressingMode::Relative, branch::Bmi),
+        (0xD0, AddressingMode::Relative, branch::Bne),
+        (0x10, AddressingMode::Relative, branch::Bpl),
+        (0x50, AddressingMode::Relative, branch::Bvc),
+        (0x70, AddressingMode::Relative, branch::Bvs),
+
+        (0x24, AddressingMode::ZeroPage, bit::Bit),
+        (0x2C, AddressingMode::Absolute, bit::Bit),
+
+        (0x00, AddressingMode::Implicit, brk::Brk),
+
+        (0x18, AddressingMode::Implicit, flags::Clc),
+        (0xD8, AddressingMode::Implicit, flags::Cld),
+        (0x58, AddressingMode::Implicit, flags::Cli),
+        (0xB8, AddressingMode::Implicit, flags::Clv),
+        (0x38, AddressingMode::Implicit, flags::Sec),
+        (0xF8, AddressingMode::Implicit, flags::Sed),
+        (0x78, AddressingMode::Implicit, flags::Sei),
+
+        (0xC9, AddressingMode::Immediate, cmp::Cmp),
+        (0xC5, AddressingMode::ZeroPage,  cmp::Cmp),
+        (0xD5, AddressingMode::ZeroPageX, cmp::Cmp),
+        (0xCD, AddressingMode::Absolute,  cmp::Cmp),
+        (0xDD, AddressingMode::AbsoluteX, cmp::Cmp),
+        (0xD9, AddressingMode::AbsoluteY, cmp::Cmp),
+        (0xC1, AddressingMode::IndirectX, cmp::Cmp),
+        (0xD1, AddressingMode::IndirectY, cmp::Cmp),
+
+        (0xE0, AddressingMode::Immediate, cpx::Cpx),
+        (0xE4, AddressingMode::ZeroPage,  cpx::Cpx),
+        (0xEC, AddressingMode::Absolute,  cpx::Cpx),
+
+        (0xC0, AddressingMode::Immediate, cpy::Cpy),
+        (0xC4, AddressingMode::ZeroPage,  cpy::Cpy),
+        (0xCC, AddressingMode::Absolute,  cpy::Cpy),
+
+        (0xC6, AddressingMode::ZeroPage,  dec::Dec),
+        (0xD6, AddressingMode::ZeroPageX, dec::Dec),
+        (0xCE, AddressingMode::Absolute,  dec::Dec),
+        (0xDE, AddressingMode::AbsoluteX, dec::Dec),
+
+        (0xCA, AddressingMode::Implicit, dex::Dex),
+        (0x88, AddressingMode::Implicit, dey::Dey),
+
+        (0x49, AddressingMode::Immediate, eor::Eor),
+        (0x45, AddressingMode::ZeroPage,  eor::Eor),
+        (0x55, AddressingMode::ZeroPageX, eor::Eor),
+        (0x4D, AddressingMode::Absolute,  eor::Eor),
+        (0x5D, AddressingMode::AbsoluteX, eor::Eor),
+        (0x59, AddressingMode::AbsoluteY, eor::Eor),
+        (0x41, AddressingMode::IndirectX, eor::Eor),
+        (0x51, AddressingMode::IndirectY, eor::Eor),
+
+        (0xE6, AddressingMode::ZeroPage,  inc::Inc),
+        (0xF6, AddressingMode::ZeroPageX, inc::Inc),
+        (0xEE, AddressingMode::Absolute,  inc::Inc),
+        (0xFE, AddressingMode::AbsoluteX, inc::Inc),
+
+        (0xE8, AddressingMode::Implicit, inx::Inx),
+        (0xC8, AddressingMode::Implicit, iny::Iny),
+
+        (0x4C, AddressingMode::Absolute, jmp::Jmp),
+        (0x6C, AddressingMode::Indirect, jmp::Jmp),
+
+        (0x20, AddressingMode::Absolute, jsr::Jsr),
+
+        (0xA9, AddressingMode::Immediate, lda::Lda),
+        (0xA5, AddressingMode::ZeroPage,  lda::Lda),
+        (0xB5, AddressingMode::ZeroPageX, lda::Lda),
+        (0xAD, AddressingMode::Absolute,  lda::Lda),
+        (0xBD, AddressingMode::AbsoluteX, lda::Lda),
+        (0xB9, AddressingMode::AbsoluteY, lda::Lda),
+        (0xA1, AddressingMode::IndirectX, lda::Lda),
+        (0xB1, AddressingMode::IndirectY, lda::Lda),
+
+        (0xA2, AddressingMode::Immediate, ldx::Ldx),
+        (0xA6, AddressingMode::ZeroPage,  ldx::Ldx),
+        (0xB6, AddressingMode::ZeroPageY, ldx::Ldx),
+        (0xAE, AddressingMode::Absolute,  ldx::Ldx),
+        (0xBE, AddressingMode::AbsoluteY, ldx::Ldx),
+
+        (0xA0, AddressingMode::Immediate, ldy::Ldy),
+        (0xA4, AddressingMode::ZeroPage,  ldy::Ldy),
+        (0xB4, AddressingMode::ZeroPageX, ldy::Ldy),
+        (0xAC, AddressingMode::Absolute,  ldy::Ldy),
+        (0xBC, AddressingMode::AbsoluteX, ldy::Ldy),
+
+        (0x4A, AddressingMode::Accumulator, lsr::Lsr),
+        (0x46, AddressingMode::ZeroPage,    lsr::Lsr),
+        (0x56, AddressingMode::ZeroPageX,   lsr::Lsr),
+        (0x4E, AddressingMode::Absolute,    lsr::Lsr),
+        (0x5E, AddressingMode::AbsoluteX,   lsr::Lsr),
+
+        (0xEA, AddressingMode::Implicit, nop::Nop),
+
+        (0x09, AddressingMode::Immediate, ora::Ora),
+        (0x05, AddressingMode::ZeroPage,  ora::Ora),
+        (0x15, AddressingMode::ZeroPageX, ora::Ora),
+        (0x0D, AddressingMode::Absolute,  ora::Ora),
+        (0x1D, AddressingMode::AbsoluteX, ora::Ora),
+        (0x19, AddressingMode::AbsoluteY, ora::Ora),
+        (0x01, AddressingMode::IndirectX, ora::Ora),
+        (0x11, AddressingMode::IndirectY, ora::Ora),
+
+        (0x48, AddressingMode::Implicit, pha::Pha),
+        (0x08, AddressingMode::Implicit, php::Php),
+        (0x68, AddressingMode::Implicit, pla::Pla),
+        (0x28, AddressingMode::Implicit, plp::Plp),
+
+        (0x2A, AddressingMode::Accumulator, rol::Rol),
+        (0x26, AddressingMode::ZeroPage,    rol::Rol),
+        (0x36, AddressingMode::ZeroPageX,   rol::Rol),
+        (0x2E, AddressingMode::Absolute,    rol::Rol),
+        (0x3E, AddressingMode::AbsoluteX,   rol::Rol),
+
+        (0x6A, AddressingMode::Accumulator, ror::Ror),
+        (0x66, AddressingMode::ZeroPage,    ror::Ror),
+        (0x76, AddressingMode::ZeroPageX,   ror::Ror),
+        (0x6E, AddressingMode::Absolute,    ror::Ror),
+        (0x7E, AddressingMode::AbsoluteX,   ror::Ror),
+
+        (0x40, AddressingMode::Implicit, rti::Rti),
+        (0x60, AddressingMode::Implicit, rts::Rts),
+
+        (0xE9, AddressingMode::Immediate, sbc::Sbc),
+        (0xE5, AddressingMode::ZeroPage,  sbc::Sbc),
+        (0xF5, AddressingMode::ZeroPageX, sbc::Sbc),
+        (0xED, AddressingMode::Absolute,  sbc::Sbc),
+        (0xFD, AddressingMode::AbsoluteX, sbc::Sbc),
+        (0xF9, AddressingMode::AbsoluteY, sbc::Sbc),
+        (0xE1, AddressingMode::IndirectX, sbc::Sbc),
+        (0xF1, AddressingMode::IndirectY, sbc::Sbc),
+
+        (0x85, AddressingMode::ZeroPage,  sta::Sta),
+        (0x95, AddressingMode::ZeroPageX, sta::Sta),
+        (0x8D, AddressingMode::Absolute,  sta::Sta),
+        (0x9D, AddressingMode::AbsoluteX, sta::Sta),
+        (0x99, AddressingMode::AbsoluteY, sta::Sta),
+        (0x81, AddressingMode::IndirectX, sta::Sta),
+        (0x91, AddressingMode::IndirectY, sta::Sta),
+
+        (0x86, AddressingMode::ZeroPage,  stx::Stx),
+        (0x96, AddressingMode::ZeroPageY, stx::Stx),
+        (0x8E, AddressingMode::Absolute,  stx::Stx),
+
+        (0x84, AddressingMode::ZeroPage,  sty::Sty),
+        (0x94, AddressingMode::ZeroPageX, sty::Sty),
+        (0x8C, AddressingMode::Absolute,  sty::Sty),
+
+        (0xAA, AddressingMode::Implicit, tax::Tax),
+        (0xA8, AddressingMode::Implicit, tay::Tay),
+        (0xBA, AddressingMode::Implicit, tsx::Tsx),
+        (0x8A, AddressingMode::Implicit, txa::Txa),
+        (0x9A, AddressingMode::Implicit, txs::Txs),
+        (0x98, AddressingMode::Implicit, tya::Tya)
     )
+}
+
+pub fn opcode_length(mode: AddressingMode) -> u8
+{
+    match mode
+    {
+        AddressingMode::Immediate => 2,
+        AddressingMode::ZeroPage | AddressingMode::ZeroPageX | AddressingMode::ZeroPageY => 2,
+        AddressingMode::Relative => 2,
+        AddressingMode::Absolute | AddressingMode::AbsoluteX | AddressingMode::AbsoluteY => 3,
+        AddressingMode::Indirect  => 3,
+        AddressingMode::IndirectX | AddressingMode::IndirectY => 2,
+        AddressingMode::Accumulator => 1,
+        AddressingMode::Implicit => 1,
+    }
 }
 
 #[cfg(test)]
@@ -197,17 +390,17 @@ mod tests
 {
     use super::{*, test_helpers::test_op};
 
-    struct DummyOp;
+    op!(DummyOp);
     impl Op for DummyOp
     {
-        fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory) {}
+        fn call(&self, _: AddressingMode, _: &mut CpuRegisters, _: &mut Memory) {}
     }
 
     #[test]
     #[should_panic(expected = "You cannot get operand address for Implicit addressing mode")]
     fn implicit_operand_addr()
     {
-        let (op, mut r, mut m) = test_op(DummyOp);
+        let (op, r, m) = test_op(DummyOp);
         op.operand_addr(AddressingMode::Implicit, &r, &m);
     }
 
@@ -215,14 +408,14 @@ mod tests
     #[should_panic]
     fn implicit_operand()
     {
-        let (op, mut r, mut m) = test_op(DummyOp);
+        let (op, r, m) = test_op(DummyOp);
         op.operand(AddressingMode::Implicit, &r, &m);
     }
 
     #[test]
     fn accumulator()
     {
-        let (op, mut r, mut m) = test_op(DummyOp);
+        let (op, mut r, m) = test_op(DummyOp);
 
         r.a.set(0x50);
 
@@ -233,7 +426,7 @@ mod tests
     #[should_panic(expected = "You cannot get operand address for Accumulator addressing mode")]
     fn accumulator_operand_addr()
     {
-        let (op, mut r, mut m) = test_op(DummyOp);
+        let (op, r, m) = test_op(DummyOp);
 
         op.operand_addr(AddressingMode::Accumulator, &r, &m);
     }
@@ -253,7 +446,7 @@ mod tests
     #[test]
     fn zero_page()
     {
-        let (op, mut r, mut m) = test_op(DummyOp);
+        let (op, r, mut m) = test_op(DummyOp);
 
         m.write(0x0000, 0x80);
         m.write(0x0080, 0xFF);
@@ -321,7 +514,7 @@ mod tests
     #[test]
     fn absolute()
     {
-        let (op, mut r, mut m) = test_op(DummyOp);
+        let (op, r, mut m) = test_op(DummyOp);
 
         m.write_u16(0x0000, 0x1234);
 
@@ -362,7 +555,7 @@ mod tests
     #[test]
     fn indirect()
     {
-        let (op, mut r, mut m) = test_op(DummyOp);
+        let (op, r, mut m) = test_op(DummyOp);
 
         m.write_u16(0x0000, 0x2000);
         m.write_u16(0x2000, 0x4000);

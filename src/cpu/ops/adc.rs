@@ -3,7 +3,7 @@ use crate::cpu::CpuRegisters;
 
 use super::{Op, AddressingMode};
 
-pub struct Adc;
+op!(Adc);
 impl Op for Adc
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)

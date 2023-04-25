@@ -1,11 +1,11 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Jsr;
+op!(Jsr);
 impl Op for Jsr
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
     {
-        self.stack_push_u16(registers, memory, *registers.pc + 2); // PC is after opcode, 2 bytes operand, -1 (JSR)
+        self.stack_push_u16(registers, memory, *registers.pc + 1); // PC is after opcode, 2 bytes operand, -1 (JSR)
         let addr = self.operand_addr(mode, registers, memory);
 
         registers.pc.set(addr);

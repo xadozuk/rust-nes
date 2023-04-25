@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Pha;
+op!(Pha);
 impl Op for Pha
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)

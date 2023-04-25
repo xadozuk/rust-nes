@@ -2,7 +2,7 @@ use crate::cpu::{BRK_VECTOR, register::{BREAK_FLAG}};
 
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Brk;
+op!(Brk);
 impl Op for Brk
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -12,6 +12,8 @@ impl Op for Brk
         let status_register: u8 = Into::<u8>::into(&registers.p) | BREAK_FLAG;
         self.stack_push(registers, memory, status_register);
 
+        // This is an internal addition so the CPU can "know" when BRK is ran and exit properly
+        registers.p.set_break(true);
         registers.pc.set(memory.read_u16(BRK_VECTOR));
     }
 }

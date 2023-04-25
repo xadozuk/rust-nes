@@ -1,4 +1,4 @@
-use std::ops::{Deref, AddAssign, SubAssign};
+use std::ops::{Deref, AddAssign};
 
 use super::STACK_POINTER_START;
 
@@ -88,14 +88,14 @@ impl StackRegister
 {
     pub fn increment(&mut self) -> u8
     {
-        self.value += 1;
+        self.value = self.value.wrapping_add(1);
         self.value
     }
 
     pub fn decrement(&mut self) -> u8
     {
         let value = self.value;
-        self.value -= 1;
+        self.value = self.value.wrapping_sub(1);
 
         value
     }
@@ -120,6 +120,9 @@ pub struct StatusRegister
     decimal_mode:       bool,
     overflow:           bool,
     negative:           bool,
+
+    // Not in NES, internal impl
+    break_state:        bool
 }
 
 impl StatusRegister
@@ -133,6 +136,8 @@ impl StatusRegister
             decimal_mode:       false,
             overflow:           false,
             negative:           false,
+
+            break_state:        false
         }
     }
 
@@ -144,16 +149,8 @@ impl StatusRegister
         self.decimal_mode =         false;
         self.overflow =             false;
         self.negative =             false;
-    }
 
-    pub fn load_from(&mut self, value: u8)
-    {
-        self.carry =              value & CARRY_FLAG != 0;
-        self.zero =               value & ZERO_FLAG != 0;
-        self.interrupt_disable =  value & INTERRUPT_FLAG != 0;
-        self.decimal_mode =       value & DECIMAL_FLAG != 0;
-        self.overflow =           value & OVERFLOW_FLAG != 0;
-        self.negative =           value & NEGATIVE_FLAG != 0;
+        self.break_state =          false;
     }
 
     pub fn update_for_value(&mut self, value : u8)
@@ -222,6 +219,17 @@ impl StatusRegister
         self.interrupt_disable
     }
 
+    // Internal impl
+    pub fn set_break(&mut self, flag: bool)
+    {
+        self.break_state = flag;
+    }
+
+    pub fn has_broken(&self) -> bool
+    {
+        self.break_state
+    }
+
 }
 
 impl From<u8> for StatusRegister
@@ -234,7 +242,9 @@ impl From<u8> for StatusRegister
             interrupt_disable:  byte & INTERRUPT_FLAG != 0,
             decimal_mode:       byte & DECIMAL_FLAG != 0,
             overflow:           byte & OVERFLOW_FLAG != 0,
-            negative:           byte & NEGATIVE_FLAG != 0
+            negative:           byte & NEGATIVE_FLAG != 0,
+
+            break_state: false
         }
     }
 }

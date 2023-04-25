@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Clc;
+op!(Clc);
 impl Op for Clc
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
@@ -9,7 +9,7 @@ impl Op for Clc
     }
 }
 
-pub struct Cld;
+op!(Cld);
 impl Op for Cld
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
@@ -18,7 +18,7 @@ impl Op for Cld
     }
 }
 
-pub struct Cli;
+op!(Cli);
 impl Op for Cli
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
@@ -27,7 +27,7 @@ impl Op for Cli
     }
 }
 
-pub struct Clv;
+op!(Clv);
 impl Op for Clv
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
@@ -36,7 +36,7 @@ impl Op for Clv
     }
 }
 
-pub struct Sec;
+op!(Sec);
 impl Op for Sec
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
@@ -45,7 +45,7 @@ impl Op for Sec
     }
 }
 
-pub struct Sed;
+op!(Sed);
 impl Op for Sed
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)
@@ -54,7 +54,7 @@ impl Op for Sed
     }
 }
 
-pub struct Sei;
+op!(Sei);
 impl Op for Sei
 {
     fn call(&self, _: AddressingMode, registers: &mut CpuRegisters, _: &mut Memory)

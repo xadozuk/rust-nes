@@ -1,6 +1,6 @@
 use super::{Op, AddressingMode, CpuRegisters, Memory};
 
-pub struct Bcc;
+op!(Bcc);
 impl Op for Bcc
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -12,7 +12,7 @@ impl Op for Bcc
     }
 }
 
-pub struct Bcs;
+op!(Bcs);
 impl Op for Bcs
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -24,7 +24,7 @@ impl Op for Bcs
     }
 }
 
-pub struct Beq;
+op!(Beq);
 impl Op for Beq
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -36,7 +36,7 @@ impl Op for Beq
     }
 }
 
-pub struct Bmi;
+op!(Bmi);
 impl Op for Bmi
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -48,7 +48,7 @@ impl Op for Bmi
     }
 }
 
-pub struct Bne;
+op!(Bne);
 impl Op for Bne
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -60,7 +60,7 @@ impl Op for Bne
     }
 }
 
-pub struct Bpl;
+op!(Bpl);
 impl Op for Bpl
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -72,7 +72,7 @@ impl Op for Bpl
     }
 }
 
-pub struct Bvc;
+op!(Bvc);
 impl Op for Bvc
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
@@ -84,7 +84,7 @@ impl Op for Bvc
     }
 }
 
-pub struct Bvs;
+op!(Bvs);
 impl Op for Bvs
 {
     fn call(&self, mode: AddressingMode, registers: &mut CpuRegisters, memory: &mut Memory)
