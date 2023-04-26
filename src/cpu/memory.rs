@@ -1,3 +1,8 @@
+pub const RAM_START:      u16 = 0x0000;
+pub const RAM_MIRROR_END: u16 = 0x1FFF;
+pub const PPU_START:      u16 = 0x2000;
+pub const PPU_MIRROR_END: u16 = 0x3FFF;
+
 pub struct Memory
 {
     memory: [u8; 0x10000]
@@ -12,14 +17,26 @@ impl Memory
         }
     }
 
+    fn unmirrored_addr(&self, pos: u16) -> usize
+    {
+        let addr = match pos
+        {
+            RAM_START..=RAM_MIRROR_END => pos & 0b0111_1111_1111,
+            PPU_START..=PPU_MIRROR_END => pos & 0b0010_0000_0000_0111,
+            _ => pos
+        };
+
+        addr as usize
+    }
+
     pub fn read(&self, pos: u16) -> u8
     {
-        self.memory[pos as usize]
+        self.memory[self.unmirrored_addr(pos)]
     }
 
     pub fn write(&mut self, pos: u16, data: u8)
     {
-        self.memory[pos as usize] = data;
+        self.memory[self.unmirrored_addr(pos)] = data;
     }
 
     pub fn read_u16(&self, pos: u16) -> u16
@@ -107,6 +124,59 @@ mod tests
         m.memory[0xA2] = 0x3;
 
         assert_eq!(&[0x1, 0x2, 0x3], m.read_slice(0xA0, 3));
+    }
+
+    #[test]
+    fn mirrored_read_ram()
+    {
+        let mut m = Memory::new();
+
+        m.memory[0x0000] = 0xFF;
+
+        assert_eq!(0xFF, m.read(0x0800));
+        assert_eq!(0xFF, m.read(0x1000));
+        assert_eq!(0xFF, m.read(0x1800));
+    }
+
+    #[test]
+    fn mirrored_write_ram()
+    {
+        let mut m = Memory::new();
+
+        m.write(0x0800, 0xFF);
+        assert_eq!(0xFF, m.memory[0x0000]);
+
+        m.write(0x1000, 0xFE);
+        assert_eq!(0xFE, m.memory[0x0000]);
+
+        m.write(0x1800, 0xFD);
+        assert_eq!(0xFD, m.memory[0x0000]);
+    }
+
+    #[test]
+    fn mirrored_ppu_read()
+    {
+        let mut m = Memory::new();
+
+        m.memory[0x2000] = 0xFF;
+
+        assert_eq!(0xFF, m.read(0x2008));
+        assert_eq!(0xFF, m.read(0x2010));
+    }
+
+    #[test]
+    fn mirrored_ppu_write()
+    {
+        let mut m = Memory::new();
+
+        m.write(0x2008, 0xFF);
+        assert_eq!(0xFF, m.memory[0x2000]);
+
+        m.write(0x2010, 0xFE);
+        assert_eq!(0xFE, m.memory[0x2000]);
+
+        m.write(0x2018, 0xFD);
+        assert_eq!(0xFD, m.memory[0x2000]);
     }
 
 }
