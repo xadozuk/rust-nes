@@ -1,11 +1,16 @@
+use crate::rom::Rom;
+
 pub const RAM_START:      u16 = 0x0000;
+pub const RAM_END:        u16 = 0xFFFF;
 pub const RAM_MIRROR_END: u16 = 0x1FFF;
 pub const PPU_START:      u16 = 0x2000;
 pub const PPU_MIRROR_END: u16 = 0x3FFF;
+pub const PRG_ROM_START:  u16 = 0x8000; // TODO: align with mapper number
 
 pub struct Memory
 {
-    memory: [u8; 0x10000]
+    memory: [u8; 0x10000],
+    rom: Rom
 }
 
 impl Memory
@@ -13,8 +18,14 @@ impl Memory
     pub fn new() -> Memory
     {
         Memory {
-            memory: [0; 0x10000]
+            memory: [0; 0x10000],
+            rom: Rom::empty()
         }
+    }
+
+    pub fn load_rom(&mut self, rom: Rom)
+    {
+        self.rom = rom;
     }
 
     fn unmirrored_addr(&self, pos: u16) -> usize
@@ -31,12 +42,20 @@ impl Memory
 
     pub fn read(&self, pos: u16) -> u8
     {
-        self.memory[self.unmirrored_addr(pos)]
+        match pos
+        {
+            PRG_ROM_START..=RAM_END => self.rom_read(pos),
+            _ => self.memory[self.unmirrored_addr(pos)]
+        }
     }
 
     pub fn write(&mut self, pos: u16, data: u8)
     {
-        self.memory[self.unmirrored_addr(pos)] = data;
+        match pos
+        {
+            PRG_ROM_START..=RAM_END => panic!("Unable to write into cartridge ROM space"),
+            _ => self.memory[self.unmirrored_addr(pos)] = data
+        }
     }
 
     pub fn read_u16(&self, pos: u16) -> u16
@@ -55,6 +74,7 @@ impl Memory
         self.write(pos + 1, bytes[1]);
     }
 
+    // TODO: handle mapping and prevent writting to rom
     pub fn read_slice(&self, pos: u16, length: usize) -> &[u8]
     {
         &self.memory[(pos as usize)..(pos as usize) + length]
@@ -63,6 +83,20 @@ impl Memory
     pub fn write_slice(&mut self, pos: u16, data: &[u8])
     {
         self.memory[(pos as usize)..(pos as usize) + data.len()].copy_from_slice(data);
+    }
+
+    fn rom_read(&self, pos: u16) -> u8
+    {
+        // Reframe only on PRG space
+        let mut addr = pos - PRG_ROM_START;
+
+        // Only 1 bank of 16KB PRG so we mirror
+        if self.rom.prg.len() == 0x4000 && addr > 0x4000
+        {
+            addr %= 0x4000;
+        }
+
+        self.rom.prg[addr as usize]
     }
 
 }

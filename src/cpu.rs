@@ -7,6 +7,8 @@ use register::CpuRegisters;
 use memory::Memory;
 use ops::OpcodeMap;
 
+use crate::rom::Rom;
+
 use self::ops::{opcode_length, Opcode};
 
 const ROM_START: u16          = 0x8000;
@@ -52,6 +54,11 @@ impl Cpu
     pub fn load(&mut self, program: Vec<u8>)
     {
         self.load_at(ROM_START, program);
+    }
+
+    pub fn load_rom(&mut self, rom: Rom)
+    {
+        self.memory.load_rom(rom);
     }
 
     pub fn load_at(&mut self, start_addr: u16, program: Vec<u8>)
